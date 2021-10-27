@@ -1,6 +1,4 @@
-# from gameLib.image_proc import match_img_knn
 import configparser
-from game_pos_template import GamePosition
 import ctypes
 import logging
 import os
@@ -22,9 +20,6 @@ class GameControl():
     def __init__(self, hwnd):
         self.run = True
         self.debug_enable = False
-
-
-
         self.hwnd = hwnd
 
         # 左 上 右 下 自左上
@@ -203,7 +198,7 @@ class GameControl():
             print(a)
             return 0, 0
 
-    def find_multi_img(self, *img_template_path, part=False, pos1=None, pos2=None, gray=False):
+    def find_multi_img(self, img_template_path, part=False, pos1=None, pos2=None, gray=False):
         """
         查找多张图片
             :param img_template_path: 欲查找的图片路径列表
@@ -458,7 +453,5 @@ def on_EVENT_LBUTTONDOWN(event, x, y, flags, param):
 
 if __name__ == '__main__':
     hwnd = win32gui.FindWindow(0, u'跳一跳')
-    gp = GamePosition()
-    pos1, pos2 = gp.start_button
-    game_ctl = GameControl(hwnd)
-    game_ctl.mouse_click_bg(pos1)
+    game = GameControl(hwnd)
+    game.debug()
