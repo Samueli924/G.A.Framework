@@ -1,5 +1,6 @@
 # from gameLib.image_proc import match_img_knn
 import configparser
+from game_pos_template import GamePosition
 import ctypes
 import logging
 import os
@@ -433,10 +434,12 @@ class GameControl():
         # 分辨率
         self.img = self.screenshot_window()
         print('游戏分辨率：' + str(self.img.shape))
-
-        while(1):
+        cv2.namedWindow("image")
+        cv2.setMouseCallback("image", on_EVENT_LBUTTONDOWN)
+        while True:
             # 点击范围标记
-            cv2.imshow('Click Area (Press \'q\' to exit)', self.img)
+            self.img = self.screenshot_window()
+            cv2.imshow('image', self.img)
 
             # 候选图片
 
@@ -447,7 +450,15 @@ class GameControl():
         cv2.destroyAllWindows()
         self.debug_enable = False
 
+
+def on_EVENT_LBUTTONDOWN(event, x, y, flags, param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print("鼠标坐标({},{})".format(x,y))
+
+
 if __name__ == '__main__':
     hwnd = win32gui.FindWindow(0, u'跳一跳')
+    gp = GamePosition()
+    pos1, pos2 = gp.start_button
     game_ctl = GameControl(hwnd)
-    game_ctl.debug()
+    game_ctl.mouse_click_bg(pos1)
