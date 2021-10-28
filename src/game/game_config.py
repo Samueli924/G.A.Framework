@@ -8,7 +8,7 @@ game_pos = {
 game_scene = {
     "start_index": ["img/start_game.png", "img/start_title.png", True],
     "over_page": ["img/retry.png", "img/return_home.png", True],
-    "play_page": ["img/player.png", True],
+    "play_page": ["img/player.png", False],
 }
 
 

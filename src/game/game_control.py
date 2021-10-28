@@ -270,6 +270,14 @@ class GameControl():
         time.sleep(random.randint(20, 80)/1000)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
+    def mouse_hold(self,duration):
+        """
+        鼠标长按
+        """
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        time.sleep(duration)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+
     def mouse_drag(self, pos1, pos2):
         """
         鼠标拖拽
@@ -454,4 +462,6 @@ def on_EVENT_LBUTTONDOWN(event, x, y, flags, param):
 if __name__ == '__main__':
     hwnd = win32gui.FindWindow(0, u'跳一跳')
     game = GameControl(hwnd)
+    # (151, 105) (178, 173)
     game.debug()
+

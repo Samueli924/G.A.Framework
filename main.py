@@ -47,7 +47,7 @@ class Gamer():
         start_button = self.gamePos.get_pos("start_button")
         self.gamectl.mouse_move(start_button[0],start_button[1])
         self.gamectl.mouse_click()
-        time.sleep(1)
+        time.sleep(3)
         if self.get_scene() != "start_index":
             return True
         else:
@@ -58,7 +58,7 @@ class Gamer():
     def stabled(self):
         img_src = self.gamectl.screenshot_window(gray=True)
         color = img_src[225][80]
-        time.sleep(0.5)
+        time.sleep(3)
         img_src = self.gamectl.screenshot_window(gray=True)
         if img_src[225][80] == color:
             return True
@@ -69,20 +69,44 @@ class Gamer():
     def pre_img(self):
         if self.stabled():
             img_src = self.gamectl.screenshot_window(gray=True)
-            img_rec = cv2.rectangle(img_src,(0,200),(450,650))
+            img_crop = img_src[200:550, 0:450]
+            # (0, 200), (450, 550)
+            img_list = img_crop.tolist()
+            color = img_src[225][80]
+            img = np.zeros(img_crop.shape, dtype=np.uint8)
+            up = (0, 0)
+            found = False
+            stage_color = 0
+            for h in img_list:
+                for w in h:
+                    if (img_list.index(h) != 0) and (h.index(w) != 0):
+                        if w != color:
+                            # print(img_list.index(h),h.index(w))
+                            stage_color = h[h.index(w) + 2]
+                            up = (img_list.index(h) + 2, h.index(w))
+                            found = True
+                            break
+                if found:
+                    break
 
-            # img_list = img_src.tolist()
-            # color = img_src[225][80]
-            # img = np.zeros(img_src.shape, dtype=np.uint8)
-            # h = 0
-            # w = 0
-            # for h in img_list:
-            #     for w in h:
-            #         if w != color:
-            #             img[img_list.index(h)][h.index(w)] = 255
-            cv2.imshow("contours", img_rec)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+
+            last_pos = (0, 0)
+            for h in img_list:
+                for w in h:
+                    if (abs(w - stage_color) <= 2) and (abs(h[h.index(w) + 2]) > 2) and h.index(w) > last_pos[1] + 3:
+                        img[img_list.index(h)][h.index(w)] = 255
+                        last_pos = (img_list.index(h), h.index(w))
+
+            right = last_pos
+            right = (right[1],right[0]+200)
+            up = (up[1],up[0]+200)
+            stage_point = (int((right[0] + up[0]) / 2),int((right[1] + up[1]) / 2))
+            return stage_point
+
+            # cv2.namedWindow("image")
+            # cv2.imshow("image", img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
         # cv2.imshow("contours", img_src)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
@@ -98,31 +122,41 @@ class Gamer():
         # cv2.destroyAllWindows()
 
     def play(self):
-        maxLoc = self.gamectl.find_game_img("img/player.png",gray=True)
-        player_pos = (maxLoc[0]+15, maxLoc[1]+80)
+        maxLoc = self.gamectl.find_game_img("img/player.png",gray=True,thread=0.75)
+        if maxLoc:
+            player_pos = (maxLoc[0]+15, maxLoc[1]+80)
+            stage_point = self.pre_img()
+            distance = (((stage_point[0] - player_pos[0]) ** 2 + (stage_point[1] - player_pos[1]) ** 2) ** 0.5)
+            jump_pad = self.gamePos.get_pos("jump_tap")
+            self.gamectl.mouse_move(jump_pad[0],jump_pad[1])
+            self.gamectl.mouse_hold(distance*0.00275)
+        else:
+            jump_pad = self.gamePos.get_pos("jump_tap")
+            self.gamectl.mouse_move(jump_pad[0], jump_pad[1])
+            self.gamectl.mouse_hold(0.01)
+        time.sleep(1)
+
 
     def over_page(self):
         retry_button = self.gamePos.get_pos("retry")
         self.gamectl.mouse_move(retry_button[0], retry_button[1])
         self.gamectl.mouse_click()
-        time.sleep(1)
+        time.sleep(3)
         if self.get_scene() != "over_page":
             return True
         else:
-            print("页面跳转失败")
-            input()
-            exit()
+            self.over_page()
 
     def start(self):
-        # current_scene = self.get_scene()
-        # print("当前场景: {}".format(current_scene))
-        # if current_scene == 'start_index':
-        #     self.index_start()
-        # elif current_scene == 'play_page':
-        #     self.play()
-        # elif current_scene == 'over_page':
-        #     self.over_page()
-        self.pre_img()
+        while True:
+            current_scene = self.get_scene()
+            print("当前场景: {}".format(current_scene))
+            if current_scene == 'start_index':
+                self.index_start()
+            elif current_scene == 'play_page':
+                self.play()
+            elif current_scene == 'over_page':
+                self.over_page()
 
 
 
