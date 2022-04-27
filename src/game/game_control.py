@@ -3,7 +3,7 @@ import ctypes
 import logging
 import os
 import sys
-import time
+from time import time, sleep
 import traceback
 import random
 import cv2
@@ -12,9 +12,10 @@ import win32api
 import win32con
 import win32gui
 import json
+import sched
 import win32ui
 from PIL import Image
-
+import pyautogui
 
 class GameControl():
     def __init__(self, hwnd):
@@ -34,7 +35,7 @@ class GameControl():
         self._border_l = ((r - l) - (r2 - l2)) // 2
         self._border_t = ((b - t) - (b2 - t2)) - self._border_l
 
-        print("游戏窗口左上点({},{}) ；宽{} 高{}；窗口内控件左上点({},{}) ;宽{} 高{}".format(l, t, r - l, b - t, l2, t2, self._client_w,
+        print("程序窗口左上点({},{}) ；宽{} 高{}；窗口内控件左上点({},{}) ;宽{} 高{}".format(l, t, r - l, b - t, l2, t2, self._client_w,
                                                                         self._client_h))
 
     def init_bitmap(self):
@@ -81,7 +82,7 @@ class GameControl():
 
         except Exception:
             self.init_bitmap()
-            print("游戏窗口截图失败")
+            print("程序窗口截图失败")
             a = traceback.format_exc()
             print(a)
 
@@ -267,7 +268,7 @@ class GameControl():
         鼠标单击
         """
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-        time.sleep(random.randint(20, 80)/1000)
+        sleep(random.randint(20, 80)/1000)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
     def mouse_hold(self,duration):
@@ -275,7 +276,7 @@ class GameControl():
         鼠标长按
         """
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-        time.sleep(duration)
+        sleep(duration)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
     def mouse_drag(self, pos1, pos2):
@@ -301,7 +302,7 @@ class GameControl():
             y = int(round(move_y[i]))
             win32api.mouse_event(win32con.MOUSEEVENTF_MOVE |
                                  win32con.MOUSEEVENTF_ABSOLUTE, x, y, 0, 0)
-            time.sleep(0.01)
+            sleep(0.01)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
     def mouse_click_bg(self, pos, pos_end=None):
@@ -323,7 +324,7 @@ class GameControl():
                                  0, win32api.MAKELONG(pos_rand[0], pos_rand[1]))
             win32gui.SendMessage(self.hwnd, win32con.WM_LBUTTONDOWN,
                                  0, win32api.MAKELONG(pos_rand[0], pos_rand[1]))
-            time.sleep(random.randint(20, 80)/1000)
+            sleep(random.randint(20, 80)/1000)
             win32gui.SendMessage(self.hwnd, win32con.WM_LBUTTONUP,
                                  0, win32api.MAKELONG(pos_rand[0], pos_rand[1]))
 
@@ -342,7 +343,7 @@ class GameControl():
             y = int(round(move_y[i]))
             win32gui.SendMessage(
                 self.hwnd, win32con.WM_MOUSEMOVE, 0, win32api.MAKELONG(x, y))
-            time.sleep(0.01)
+            sleep(0.01)
         win32gui.SendMessage(self.hwnd, win32con.WM_LBUTTONUP,
                              0, win32api.MAKELONG(pos2[0], pos2[1]))
 
@@ -354,18 +355,18 @@ class GameControl():
             :param quit=True: 超时后是否退出
             :return: 成功返回坐标，失败返回False
         """
-        start_time = time.time()
-        while time.time()-start_time <= max_time and self.run:
+        start_time = time()
+        while time()-start_time <= max_time and self.run:
             maxVal, maxLoc = self.find_img(img_path)
             # print("最大相似点"+str(maxVal))
             if maxVal > 0.8:
                 return maxLoc
             if max_time > 5:
-                time.sleep(1)
+                sleep(1)
             else:
-                time.sleep(0.1)
+                sleep(0.1)
         if quit:
-            # 超时则退出游戏
+            # 超时则退出程序
             self.quit_game()
         else:
             return False
@@ -380,14 +381,14 @@ class GameControl():
             :param quit=True: 超时后是否退出
             :return: 成功返回True，失败返回False
         """
-        start_time = time.time()
-        while time.time()-start_time <= max_time and self.run:
+        start_time = time()
+        while time()-start_time <= max_time and self.run:
             pos = self.find_color(region, color, tolerance)
             if pos != -1:
                 return True
-            time.sleep(1)
+            sleep(1)
         if quit:
-            # 超时则退出游戏
+            # 超时则退出程序
             self.quit_game()
         else:
             return False
@@ -412,7 +413,7 @@ class GameControl():
 
     def quit_game(self):
         """
-        退出游戏
+        退出程序
         """
         self.clean_mem()    # 清理内存
         print("退出")
@@ -436,7 +437,7 @@ class GameControl():
 
         # 分辨率
         self.img = self.screenshot_window()
-        print('游戏分辨率：' + str(self.img.shape))
+        print('程序分辨率：' + str(self.img.shape))
         cv2.namedWindow("image")
         cv2.setMouseCallback("image", on_EVENT_LBUTTONDOWN)
         while True:
@@ -453,6 +454,28 @@ class GameControl():
         cv2.destroyAllWindows()
         self.debug_enable = False
 
+    def input_keyboard(self, text):
+        pyautogui.write(text, interval=0.5)
+        pyautogui.hotkey("enter")
+        # s = sched.scheduler(time, sleep)
+        # meeting_num_list = list(map(lambda x: str("0x3") + str(x), str(meeting_num).split()))
+        # meeting_num_list.append("0x0D")
+        # for key in meeting_num_list:
+        #     self.press_key(self.hwnd, s, key, 0.1, 0.1)
+
+    def press_key(self, hwnd, s, key, start_sec, hold_sec):
+        priority = 2
+        foreground_time = 0.15
+        duration = start_sec + hold_sec
+
+        s.enter(start_sec - foreground_time, priority, win32gui.SetForegroundWindow,
+                argument=(hwnd,))
+        s.enter(start_sec, priority, win32api.SendMessage,
+                argument=(hwnd, win32con.WM_KEYDOWN, key, 0))
+        s.enter(duration - foreground_time, priority, win32gui.SetForegroundWindow,
+                argument=(hwnd,))
+        s.enter(duration, priority, win32api.SendMessage,
+                argument=(hwnd, win32con.WM_KEYUP, key, 0))
 
 def on_EVENT_LBUTTONDOWN(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:

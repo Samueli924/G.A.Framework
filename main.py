@@ -1,180 +1,196 @@
-import time
-import sys
-import numpy as np
-import cv2
-import win32gui
-import json
 import configparser
-from matplotlib import pyplot as plt
-import ctypes
-import src.game.game_control as gc
-import src.game.game_config as game_conf
+import os
+import time
+import win32gui
+from utils.log import Logger
+import psutil
+import win32con
+from src.game.game_control import GameControl
+import pyautogui
+import argparse
+
+position = {
+    "main_page": (781, 22),
+    "join_meeting": (813, 440)
+}
 
 
-
-class Gamer():
-    def __init__(self, hwnd):
-        self.gamectl = gc.GameControl(hwnd)
-        self.gamePos = game_conf.GamePos()
-        self.gameSce = game_conf.GameScene()
-
-    def check_scene(self, name):
-        if self.gameSce.get_scene(name):
-            maxVallist, maxLoclist = self.gamectl.find_multi_img(self.gameSce.get_scene(name)[:-1],
-                                                                 gray=self.gameSce.get_scene(name)[-1])
-            if sorted(maxVallist, reverse=True)[0] >= 0.95:
-                return True
-            else:
-                return False
-        # TODO 添加错误反馈
-
-    def get_scene(self):
-        all_scene = self.gameSce.get_all()
-        mps = ""
-        mpp = 0
-
-        for scene in all_scene:
-            maxVallist, maxLoclist = self.gamectl.find_multi_img(all_scene[scene][:-1],gray=all_scene[scene][-1])
-            if sorted(maxVallist, reverse=True)[0] > mpp:
-                # print("该页面为{}的可能性为{}".format(scene,sorted(maxVallist, reverse=True)[0]))
-                mps = scene
-                mpp = sorted(maxVallist, reverse=True)[0]
-
-        return mps
-
-
-    def index_start(self):
-        start_button = self.gamePos.get_pos("start_button")
-        self.gamectl.mouse_move(start_button[0],start_button[1])
-        self.gamectl.mouse_click()
-        time.sleep(3)
-        if self.get_scene() != "start_index":
-            return True
-        else:
-            print("页面跳转失败")
-            input()
-            exit()
-
-    def stabled(self):
-        img_src = self.gamectl.screenshot_window(gray=True)
-        color = img_src[225][80]
-        time.sleep(3)
-        img_src = self.gamectl.screenshot_window(gray=True)
-        if img_src[225][80] == color:
-            return True
-        else:
-            time.sleep(1)
-            return self.stabled()
-
-    def pre_img(self):
-        if self.stabled():
-            img_src = self.gamectl.screenshot_window(gray=True)
-            img_crop = img_src[200:550, 0:450]
-            # (0, 200), (450, 550)
-            img_list = img_crop.tolist()
-            color = img_src[225][80]
-            img = np.zeros(img_crop.shape, dtype=np.uint8)
-            up = (0, 0)
-            found = False
-            stage_color = 0
-            for h in img_list:
-                for w in h:
-                    if (img_list.index(h) != 0) and (h.index(w) != 0):
-                        if w != color:
-                            # print(img_list.index(h),h.index(w))
-                            stage_color = h[h.index(w) + 2]
-                            up = (img_list.index(h) + 2, h.index(w))
-                            found = True
-                            break
-                if found:
-                    break
-
-
-            last_pos = (0, 0)
-            for h in img_list:
-                for w in h:
-                    if (abs(w - stage_color) <= 2) and (abs(h[h.index(w) + 2]) > 2) and h.index(w) > last_pos[1] + 3:
-                        img[img_list.index(h)][h.index(w)] = 255
-                        last_pos = (img_list.index(h), h.index(w))
-
-            right = last_pos
-            right = (right[1],right[0]+200)
-            up = (up[1],up[0]+200)
-            stage_point = (int((right[0] + up[0]) / 2),int((right[1] + up[1]) / 2))
-            return stage_point
-
-            # cv2.namedWindow("image")
-            # cv2.imshow("image", img)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-        # cv2.imshow("contours", img_src)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        # binary,contours, hierarchy = cv2.findContours(img_src,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-        # # 创建白色幕布
-        # temp = np.ones(img_src.shape, np.uint8) * 255
-        # # 画出轮廓：temp是白色幕布，contours是轮廓，-1表示全画，然后是颜色，厚度
-        # cv2.drawContours(temp, contours, -1, (0, 255, 0), 3)
-        #
-        # cv2.imshow("contours", temp)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-    def play(self):
-        maxLoc = self.gamectl.find_game_img("img/player.png",gray=True,thread=0.75)
-        if maxLoc:
-            player_pos = (maxLoc[0]+15, maxLoc[1]+80)
-            stage_point = self.pre_img()
-            distance = (((stage_point[0] - player_pos[0]) ** 2 + (stage_point[1] - player_pos[1]) ** 2) ** 0.5)
-            jump_pad = self.gamePos.get_pos("jump_tap")
-            self.gamectl.mouse_move(jump_pad[0],jump_pad[1])
-            self.gamectl.mouse_hold(distance*0.00275)
-        else:
-            jump_pad = self.gamePos.get_pos("jump_tap")
-            self.gamectl.mouse_move(jump_pad[0], jump_pad[1])
-            self.gamectl.mouse_hold(0.01)
-        time.sleep(1)
-
-
-    def over_page(self):
-        retry_button = self.gamePos.get_pos("retry")
-        self.gamectl.mouse_move(retry_button[0], retry_button[1])
-        self.gamectl.mouse_click()
-        time.sleep(3)
-        if self.get_scene() != "over_page":
-            return True
-        else:
-            self.over_page()
-
-    def start(self):
+class Recorder:
+    def __init__(self):
+        self.obs_hwnd = None
+        self.zoom_hwnd = None
+        self.meeting_hwnd = None
+        self.logger = Logger("Recorder", debug=True, save=True, show=True)
+        self.config = configparser.ConfigParser()
+        self.config.read("config/config.ini")
+        self.init_running()
         while True:
-            current_scene = self.get_scene()
-            print("当前场景: {}".format(current_scene))
-            if current_scene == 'start_index':
-                self.index_start()
-            elif current_scene == 'play_page':
-                self.play()
-            elif current_scene == 'over_page':
-                self.over_page()
+            win32gui.EnumWindows(self.winEnumHandler, None)     # 获取窗口hwnd
+            if not (self.obs_hwnd and self.zoom_hwnd):
+                time.sleep(1)
+            else:
+                self.logger.info("程序窗口检测结束，启动成功")
+                break
+        self.obs_gc = GameControl(self.obs_hwnd)
+        self.logger.info("开始监测程录屏软件启动进程")
+        while True:
+            __temp_possibility, _ = self.obs_gc.find_img("img/obs_start.png")
+            if __temp_possibility <= 0.8:
+                time.sleep(1)
+            else:
+                self.logger.info("OBS窗口检测启动成功")
+                break
 
+        self.gc = GameControl(self.zoom_hwnd)
+        self.logger.info("开始监测Zoom程序启动进度")
+        while True:
+            __temp_possibility, _ = self.gc.find_img("img/main_page.png")
+            self.logger.info("当前页面处于主页的可能性为: %.2f%%" % (__temp_possibility * 100))
+            if __temp_possibility <= 0.8:
+                time.sleep(1)
+            else:
+                break
+        time.sleep(1)
+        self.front_obs()
+        time.sleep(1)
+        pyautogui.press("f12")
+        self.logger.info("OBS开始录制")
+        time.sleep(1)
+        self.logger.info("最大化前置Zoom")
+        self.front_zoom()
+        time.sleep(1)
+        self.gc.mouse_move(position["join_meeting"])
+        self.gc.mouse_click()
+        self.logger.info("点击成功，等待5秒")
+        time.sleep(5)
+        while True:
+            win32gui.EnumWindows(self.get_meeting_hwnd, None)
+            if self.meeting_hwnd:
+                self.meeting_gc = GameControl(self.meeting_hwnd)
+                while True:
+                    __temp_possibility, _ = self.meeting_gc.find_img("img/join_page.png")
+                    self.logger.info("当前页面处于会议填写页面的可能性为: %.2f%%" % (__temp_possibility * 100))
+                    if __temp_possibility <= 0.8:
+                        time.sleep(1)
+                    else:
+                        break
+                break
+        self.logger.info("正在输入会议号")
+        self.meeting_gc.input_keyboard(meeting_number)
+        self.logger.info("等待5秒")
+        time.sleep(5)
+        while True:
+            win32gui.EnumWindows(self.get_meeting_hwnd, None)
+            if self.meeting_hwnd:
+                self.meeting_gc = GameControl(self.meeting_hwnd)
+                while True:
+                    __temp_possibility, _ = self.meeting_gc.find_img("img/meeting_password.png")
+                    self.logger.info("当前页面处于密码填写页面的可能性为: %.2f%%" % (__temp_possibility * 100))
+                    if __temp_possibility <= 0.8:
+                        time.sleep(1)
+                    else:
+                        break
+                break
+        self.logger.info("正在输入会议密码")
+        self.meeting_gc.input_keyboard(meeting_password)
+        _t = 0
+        dot_count = 1
+        while _t < meeting_duration:
+            print(f"会议已进行{self.t_time(_t)}/{self.t_time(meeting_duration)}, 正在录屏{'.'* dot_count}")
+            _t += 1
+            if dot_count >= 6:
+                dot_count = 0
+            self.front_zoom()
+            time.sleep(1)
+        self.logger.info("会议结束，正在结束录制")
+        self.front_obs()
+        time.sleep(1)
+        pyautogui.press("f12")
+        self.logger.info("程序运行结束，1分钟后关机")
+        os.system("shutdown -s -t 60")
 
+    def t_time(self, t):
+        hour = t // 3600
+        minute = (t - 3600 * hour) // 60
+        second = (t - 3600 * hour - 60 * minute)
+        return f"{hour}h {minute}m {second}s"
 
+    def start_obs(self):
+        self.logger.info("启动OBS Studio")
+        obs_path = self.config.get("path", "obs_path")
+        os.system(f'start /d "{obs_path}" "" obs64.exe')
 
-def is_admin():
-    # UAC申请，获得管理员权限
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
+    def start_zoom(self):
+        self.logger.info("启动Zoom")
+        zoom_path = self.config.get("path", "zoom_path")
+        os.system(f'start /d "{zoom_path}" "" Zoom.exe')
+
+    def front_zoom(self):
+        win32gui.ShowWindow(self.zoom_hwnd, win32con.SW_MAXIMIZE)
+        win32gui.SetForegroundWindow(self.zoom_hwnd)
+
+    def front_obs(self):
+        win32gui.ShowWindow(self.obs_hwnd, win32con.SW_MAXIMIZE)
+        win32gui.SetForegroundWindow(self.obs_hwnd)
+
+    def checkProcessRunning(self, processName: str):
+        for proc in psutil.process_iter():
+            try:
+                if processName.lower() in proc.name().lower():
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
         return False
+
+    def check_running_status(self):
+        fail_time = 0
+        while True:
+            if fail_time >= 5:
+                self.init_running()
+                break
+            if (not self.checkProcessRunning("OBS")) or (not self.checkProcessRunning("Zoom")):
+                self.logger.info("程序未完成启动，等待5秒")
+                fail_time += 1
+                time.sleep(5)
+            else:
+                self.logger.info("程序启动成功，5秒后继续")
+                time.sleep(5)
+                break
+
+    def init_running(self):
+        if not self.checkProcessRunning("OBS"):
+            self.logger.info("OBS Studio未运行")
+            self.start_obs()
+        self.start_zoom()
+        self.check_running_status()
+
+    def winEnumHandler(self, hwnd, ctx):
+        if win32gui.IsWindowVisible(hwnd):
+            if "OBS" in win32gui.GetWindowText(hwnd):
+                self.obs_hwnd = hwnd
+            if "Zoom" in win32gui.GetWindowText(hwnd):
+                self.zoom_hwnd = hwnd
+
+    def get_meeting_hwnd(self, hwnd, ctx):
+        if win32gui.IsWindowVisible(hwnd):
+            if "Zoom" in win32gui.GetWindowText(hwnd) and hwnd != self.zoom_hwnd:
+                self.meeting_hwnd = hwnd
 
 
 if __name__ == '__main__':
-    # if is_admin():
-    #     pass
-    # else:
-    #     ctypes.windll.shell32.ShellExecuteW(
-    #         None, "runas", sys.executable, __file__, None, 1)
-    hwnd = win32gui.FindWindow(0, u'跳一跳')
-    game = Gamer(hwnd)
-    game.start()
+    parser = argparse.ArgumentParser(description='TripleE Boot Zoom And OBS on demand')  # 命令行传参
+    parser.add_argument('-debug', '--debug', action='store_true', help='Enable debug output in console')
+    parser.add_argument('-m', '--meeting', help='Meeting Number ID')
+    parser.add_argument('-p', '--password', help='Meeting Password')
+    parser.add_argument('-d', '--duration', help='Meeting Duration[Second(s)]')
+
+    args = parser.parse_args()  # 定义专用参数变量
+    if not (args.meeting and args.password and args.duration):
+        input("参数不足,点击回车键退出")
+        exit()
+    debug = args.debug  # debug输出  Default:False
+    meeting_number = str(args.meeting)  # 会议号
+    meeting_password = str(args.password)  # 会议密码
+    meeting_duration = int(args.duration)   # 会议时长
+    recorder = Recorder()
+    # python main.py -m 8936901699 -p Mx7pmU -d 10
