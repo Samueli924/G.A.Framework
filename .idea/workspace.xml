@@ -1,20 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d8569d36-527d-4f23-8712-dc1005624809" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/config/config.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/check.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/log.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/player.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/retry.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/return_home.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/start_game.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/img/start_title.png" beforeDir="false" />
+    <list default="true" id="d8569d36-527d-4f23-8712-dc1005624809" name="Changes" comment="TripleE Zoom Obs Boot">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/Recorder.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/Recorder.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/game_control.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_control.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/old_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,8 +58,19 @@
       <updated>1650789556214</updated>
       <workItem from="1650789560423" duration="9301000" />
       <workItem from="1650852589240" duration="19000" />
-      <workItem from="1651031412979" duration="4060000" />
+      <workItem from="1651031412979" duration="4115000" />
+      <workItem from="1651040090724" duration="201000" />
+      <workItem from="1651040623599" duration="643000" />
+      <workItem from="1651041861593" duration="3000" />
     </task>
+    <task id="LOCAL-00001" summary="TripleE Zoom Obs Boot">
+      <created>1651035580197</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1651035580197</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -84,5 +86,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="TripleE Zoom Obs Boot" />
+    <option name="LAST_COMMIT_MESSAGE" value="TripleE Zoom Obs Boot" />
   </component>
 </project>

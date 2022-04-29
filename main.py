@@ -96,18 +96,22 @@ class Recorder:
         _t = 0
         dot_count = 1
         while _t < meeting_duration:
-            print(f"会议已进行{self.t_time(_t)}/{self.t_time(meeting_duration)}, 正在录屏{'.'* dot_count}")
+            print(f"会议已进行{self.t_time(_t)}/{self.t_time(meeting_duration)}, 正在录屏{'.'* dot_count}", end = "", flush=True)
             _t += 1
+            dot_count += 1
             if dot_count >= 6:
                 dot_count = 0
-            self.front_zoom()
+            try:
+                self.front_zoom()
+            except:
+                self.logger.warn("前置失败")
             time.sleep(1)
         self.logger.info("会议结束，正在结束录制")
         self.front_obs()
         time.sleep(1)
         pyautogui.press("f12")
-        self.logger.info("程序运行结束，1分钟后关机")
-        os.system("shutdown -s -t 60")
+        self.logger.info("程序运行结束，2分钟后关机")
+        os.system("shutdown -s -t 120")
 
     def t_time(self, t):
         hour = t // 3600

@@ -11,7 +11,6 @@ import src.game.game_control as gc
 import src.game.game_config as game_conf
 
 
-
 class Gamer():
     def __init__(self, hwnd):
         self.gamectl = gc.GameControl(hwnd)
